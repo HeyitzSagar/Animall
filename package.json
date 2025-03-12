@@ -1,0 +1,23 @@
+{
+  "name": "animal",
+  "version": "1.0.0",
+  "description": "An Animal Tech Assignment for Full Stack ",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon backend/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "MERN",
+    "animal"
+  ],
+  "author": "Sagar Gupta",
+  "license": "ISC",
+  "dependencies": {
+    "@chakra-ui/react": "^3.12.0",
+    "@emotion/react": "^11.14.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.12.1"
+  }
+}
