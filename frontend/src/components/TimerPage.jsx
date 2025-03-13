@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useMilkingSessionStore } from "../store/milking";
 
 const TimerPage = () => {
   const [payload, setPayload] = useState({
     starttime: "",
     endtime: "",
-    duration: "",
+    duration: 0,
     milkQuantity: "",
   });
 
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const audioRef = useRef(null);
+  const navigate = useNavigate(); // Initialize navigate
+  const { createMilkingSessions, getAllMilkingSession } = useMilkingSessionStore(); // Get getAllMilkingSession
 
   // Format time as MM:SS
   const formatTime = (seconds) => {
@@ -39,40 +43,75 @@ const TimerPage = () => {
     return () => clearInterval(timer);
   }, [isRunning]);
 
-  // Handle Start Timer
-  const handleStartTimer = () => {
-    setIsRunning(true);
-    setPayload((prev) => ({ ...prev, starttime: new Date().toISOString() }));
+  const handleStartPauseTimer = () => {
+    if (isRunning) {
+      handlePauseTimer();
+    } else {
+      handleStartTimer();
+    }
   };
 
-  // Handle Stop Session
-  const handleStopSession = () => {
+  const handleStartTimer = () => {
+    setIsRunning(true);
+    const start = new Date().toISOString();
+    setPayload((prev) => ({
+      ...prev,
+      starttime: prev.starttime || start,
+    }));
+  };
+
+  const handlePauseTimer = () => {
+    setIsRunning(false);
+    const end = new Date().toISOString();
+    setPayload((prev) => ({
+      ...prev,
+      endtime: end,
+    }));
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+
+  const handleStopSession = async () => {
     setIsRunning(false);
     if (audioRef.current) {
       audioRef.current.pause();
     }
 
-    const endTime = new Date();
-    const duration = time;
+    const endTime = payload.endtime || new Date().toISOString();
+    const startTime = new Date(payload.starttime);
+    const durationInSeconds = Math.floor((new Date(endTime) - startTime) / 1000);
 
-    // Ask for milk quantity
     const milkQuantity = prompt("Enter the quantity of milk collected (in liters):");
 
     if (milkQuantity !== null) {
       const updatedPayload = {
-        ...payload,
-        endtime: endTime.toISOString(),
-        duration: formatTime(duration),
-        milkQuantity,
+        startTime: payload.starttime,
+        endTime: endTime,
+        duration: durationInSeconds > 0 ? durationInSeconds : 1,
+        milkQuantity: Number(milkQuantity),
       };
 
+      console.log("Updated Payload", updatedPayload);
       setPayload(updatedPayload);
-      console.log("Session Data:", updatedPayload);
-      alert(`Milk quantity recorded: ${milkQuantity} liters`);
 
-      // Reset timer after stopping the session
-      setTime(0);
+      try {
+        const response = await createMilkingSessions(updatedPayload);
+        console.log("Success and data: ", response);
+        alert(`Milk quantity recorded: ${milkQuantity} liters`);
+
+        setTime(0);
+        setPayload({ starttime: "", endtime: "", duration: 0, milkQuantity: "" });
+      } catch (error) {
+        console.error("Error creating milking session:", error.response?.data || error.message);
+      }
     }
+  };
+
+  const handleViewAllSessions = async () => {
+    
+      navigate("/session"); // Navigate to session list page
   };
 
   return (
@@ -84,10 +123,10 @@ const TimerPage = () => {
         {formatTime(time)}
       </div>
 
-      {/* Buttons - Start and Reset */}
+      {/* Buttons - Start/Pause, Reset */}
       <div className="mt-6 flex space-x-4">
         <button
-          onClick={isRunning ? () => setIsRunning(false) : handleStartTimer}
+          onClick={handleStartPauseTimer}
           className={`px-6 py-3 text-white rounded-lg shadow-md transition-all ${
             isRunning ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
           }`}
@@ -99,7 +138,7 @@ const TimerPage = () => {
           onClick={() => {
             setTime(0);
             setIsRunning(false);
-            setPayload({ starttime: "", endtime: "", duration: "", milkQuantity: "" });
+            setPayload({ starttime: "", endtime: "", duration: 0, milkQuantity: "" });
             if (audioRef.current) {
               audioRef.current.pause();
               audioRef.current.currentTime = 0;
@@ -111,13 +150,23 @@ const TimerPage = () => {
         </button>
       </div>
 
-      {/* Stop Session Button on a new line */}
+      {/* Stop Session Button */}
       <div className="mt-4">
         <button
           onClick={handleStopSession}
           className="px-6 py-3 text-white bg-orange-500 rounded-lg shadow-md hover:bg-orange-600 transition-all"
         >
           Stop Session
+        </button>
+      </div>
+
+      {/* View All Sessions Button */}
+      <div className="mt-4">
+        <button
+          onClick={handleViewAllSessions}
+          className="px-6 py-3 text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-600 transition-all"
+        >
+          View All Sessions
         </button>
       </div>
 
