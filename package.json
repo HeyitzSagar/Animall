@@ -4,7 +4,9 @@
   "description": "An Animal Tech Assignment for Full Stack ",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon backend/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon backend/server.js",
+    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": " cross-env NODE_ENV=production node backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -23,5 +25,8 @@
     "lodash": "^4.17.21",
     "mongoose": "^8.12.1",
     "mongoose-sequence": "^6.0.1"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
